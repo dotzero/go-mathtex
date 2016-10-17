@@ -1,5 +1,6 @@
 ## go-mathtex
 
+[![Build Status](https://travis-ci.org/dotzero/go-mathtex.svg?branch=master)](https://travis-ci.org/dotzero/go-mathtex)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dotzero/go-mathtex)](https://goreportcard.com/report/github.com/dotzero/go-mathtex)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
