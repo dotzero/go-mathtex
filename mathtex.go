@@ -30,12 +30,12 @@ func RenderImage(expr string) (string, error) {
 	fileExt := ".png"
 	filename := fileBase + fileExt
 
-	err = checkBlackList(expr)
+	err = CheckBlackList(expr)
 	if err != nil {
 		return "", err
 	}
 
-	expr = analyzeLatex(expr)
+	expr = AnalyzeLatex(expr)
 	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileBase}
 	if cmdOut, err = exec.Command(MathtexPath, cmdArgs...).Output(); err != nil {
 		return "", err
@@ -53,8 +53,8 @@ func RenderImage(expr string) (string, error) {
 	return filename, nil
 }
 
-// checkBlackList parse expression and check for dangerous commands
-func checkBlackList(expr string) error {
+// CheckBlackList parse expression and check for dangerous commands
+func CheckBlackList(expr string) error {
 	var blacklist = []string{
 		`\input`,
 		`\write`,
@@ -81,8 +81,8 @@ func checkBlackList(expr string) error {
 	return nil
 }
 
-// analyzeLatex parse expression and add usepackage
-func analyzeLatex(expr string) string {
+// AnalyzeLatex parse expression and add usepackage
+func AnalyzeLatex(expr string) string {
 	eol := "\n"
 
 	conditions := map[string]string{
