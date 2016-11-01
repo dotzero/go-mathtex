@@ -18,6 +18,18 @@ var (
 	MathtexMsgLevel = "99"
 )
 
+// FileOut struct contains data of rendered file
+type FileOut struct {
+	Base string
+	Name string
+	Ext  string
+}
+
+// FileOut.fullname() returns full path
+func (f *FileOut) fullname() string {
+	return f.Base + f.Name + f.Ext
+}
+
 // RenderImage render LaTeX expression to PNG
 func RenderImage(expr string) (string, error) {
 	var (
@@ -26,17 +38,21 @@ func RenderImage(expr string) (string, error) {
 		err     error
 	)
 
-	fileBase := MathtexCachePath + md5hash(expr)
-	fileExt := ".png"
-	filename := fileBase + fileExt
-
 	err = CheckBlackList(expr)
 	if err != nil {
 		return "", err
 	}
 
+	// Init before using AnalyzeLatex
+	fileOut := FileOut{
+		Base: MathtexCachePath,
+		Name: md5hash(expr),
+		Ext:  ".png",
+	}
+
 	expr = AnalyzeLatex(expr)
-	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileBase}
+
+	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileOut.Base}
 	if cmdOut, err = exec.Command(MathtexPath, cmdArgs...).Output(); err != nil {
 		return "", err
 	}
@@ -46,11 +62,26 @@ func RenderImage(expr string) (string, error) {
 		fmt.Println(string(cmdOut))
 	}
 
-	if flag, err := exists(filename); flag != true || err != nil {
+	if flag, err := exists(fileOut.fullname()); flag != true || err != nil {
 		return "", fmt.Errorf("Failed expression `%s`", expr)
 	}
 
-	return filename, nil
+	return fileOut.fullname(), nil
+}
+
+// CheckRenderCache check cache for expression
+func CheckRenderCache(expr string) (string, error) {
+	fileOut := FileOut{
+		Base: MathtexCachePath,
+		Name: md5hash(expr),
+		Ext:  ".png",
+	}
+
+	if flag, err := exists(fileOut.fullname()); flag == true && err == nil {
+		return fileOut.fullname(), nil
+	}
+
+	return "", fmt.Errorf("Sorry, cache %s is not available.", fileOut.fullname())
 }
 
 // CheckBlackList parse expression and check for dangerous commands

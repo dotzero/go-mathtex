@@ -1,4 +1,5 @@
 // +build extend
+// How to use: go test -v -tags extend
 
 package mathtex
 
@@ -27,15 +28,20 @@ func TestRenderImage(t *testing.T) {
 
 		content, err := ioutil.ReadFile(fixture)
 		if err != nil {
-			log.Println("Failed ReadFile: " + string(content))
 			t.Fatalf(err.Error())
 		}
 
 		filename, err := RenderImage(string(content))
 		if err != nil {
 			log.Println("Failed expression: " + string(content))
-			t.Fatalf("Mathtex error: " + err.Error())
+			t.Fatalf("RenderImage error: " + err.Error())
 		}
+
+		filename, err := CheckRenderCache(content)
+		if err != nil {
+			t.Fatalf("CheckRenderCache error: " + err.Error())
+		}
+
 		log.Printf("PNG: %s", filename)
 	}
 }
