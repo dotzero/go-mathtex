@@ -30,6 +30,11 @@ func (f *FileOut) fullname() string {
 	return f.Base + f.Name + f.Ext
 }
 
+// FileOut.outpath() returns full path without .ext
+func (f *FileOut) outpath() string {
+	return f.Base + f.Name
+}
+
 // RenderImage render LaTeX expression to PNG
 func RenderImage(expr string) (string, error) {
 	var (
@@ -52,7 +57,7 @@ func RenderImage(expr string) (string, error) {
 
 	expr = AnalyzeLatex(expr)
 
-	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileOut.fullname()}
+	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileOut.outpath()}
 	if cmdOut, err = exec.Command(MathtexPath, cmdArgs...).Output(); err != nil {
 		return "", err
 	}

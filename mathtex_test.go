@@ -10,10 +10,16 @@ func TestFileOutStruct(t *testing.T) {
 	if f1.fullname() != "/foo.bar" {
 		t.Fatalf("TestFileOutStruct: `%s` == `/foo.bar` - failed", f1.fullname())
 	}
+	if f1.outpath() != "/foo" {
+		t.Fatalf("TestFileOutStruct: `%s` == `/foo` - failed", f1.outpath())
+	}
 
 	f2 := FileOut{Name: "foobar"}
 	if f2.fullname() != "foobar" {
 		t.Fatalf("TestFileOutStruct: `%s` == `foobar` - failed", f2.fullname())
+	}
+	if f2.outpath() != "foobar" {
+		t.Fatalf("TestFileOutStruct: `%s` == `foobar` - failed", f2.outpath())
 	}
 }
 
