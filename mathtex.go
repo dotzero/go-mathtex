@@ -52,7 +52,7 @@ func RenderImage(expr string) (string, error) {
 
 	expr = AnalyzeLatex(expr)
 
-	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileOut.Base}
+	cmdArgs = []string{expr, "-m", MathtexMsgLevel, "-o", fileOut.fullname()}
 	if cmdOut, err = exec.Command(MathtexPath, cmdArgs...).Output(); err != nil {
 		return "", err
 	}
