@@ -11,7 +11,10 @@ import (
 )
 
 func TestRenderImage(t *testing.T) {
-	var err error
+	var (
+		err      error
+		filename string
+	)
 
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -31,13 +34,13 @@ func TestRenderImage(t *testing.T) {
 			t.Fatalf(err.Error())
 		}
 
-		filename, err := RenderImage(string(content))
+		filename, err = RenderImage(string(content))
 		if err != nil {
 			log.Println("Failed expression: " + string(content))
 			t.Fatalf("RenderImage error: " + err.Error())
 		}
 
-		filename, err := CheckRenderCache(content)
+		filename, err = CheckRenderCache(string(content))
 		if err != nil {
 			t.Fatalf("CheckRenderCache error: " + err.Error())
 		}
