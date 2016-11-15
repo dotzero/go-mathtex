@@ -10,12 +10,14 @@ import (
 )
 
 var (
-	// MathtexPath contains path to mathtex.cgi
+	// MathtexPath contains path to mathtex binary
 	MathtexPath = "/var/www/mathtex.cgi"
-	// MathtexCachePath contains path to mathtex.cgi cache
+	// MathtexCachePath contains path to mathtex cache files
 	MathtexCachePath = "/var/www/cache/"
-	// MathtexMsgLevel contains mathtex.cgi message level
-	MathtexMsgLevel = "99"
+	// MathtexWorkPath contains path to mathtex work files
+	MathtexWorkPath = "/var/www/work/"
+	// MathtexMsgLevel contains mathtex message level 0-99
+	MathtexMsgLevel = "0"
 )
 
 // FileOut struct contains data of rendered file

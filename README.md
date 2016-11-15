@@ -6,22 +6,23 @@
 
 This is a Go package that allows rendering LaTeX documents to images using [mathTeX](http://www.forkosh.com/mathtex.html). Also parse LaTeX expression and check for dangerous commands and add some instructions for proper rendering.
 
-## Pre-build mathTeX
+## Before install
 
-At first of all, you must install `texlive`
+At first of all, you must install `texlive` package, follow the instructions below to install TeX Live on Debian-based linux.
 
 ```bash
 sudo apt-get update && apt-get install -y --no-install-recommends texlive-full
 ```
 
-Then compile `mathtex` to binary
+Then compile `mathtex` to binary, follow the instructions below.
 
 ```bash
-cd mathtex
+git clone https://github.com/dotzero/go-mathtex
+cd go-mathtex/mathtex
 make build
 ```
 
-This commands will compile mathtex to `/var/www/mathtex.cgi` and also create two dirs `/var/www` and `/var/www/cache`.
+This commands will compile mathtex to `/var/www/mathtex.cgi` and also create two dirs `/var/www/cache` and `/var/www/work`.
 You can change this behavior with `make build PREFIX="/path/to/"`.
 
 ## Install
@@ -30,7 +31,7 @@ You can change this behavior with `make build PREFIX="/path/to/"`.
 go get github.com/dotzero/go-mathtex
 ```
 
-## Example
+## Usage
 
 ```go
 package main
@@ -42,7 +43,11 @@ import (
 )
 
 func main() {
-    mathtex.MathtexMsgLevel = "99" // Set Verbosity level 0-99
+    mathtex.MathtexPath = "/var/www/mathtex.cgi" // path to mathtex binary
+    mathtex.MathtexCachePath = "/var/www/cache/" // path to mathtex cache files
+    mathtex.MathtexWorkPath = "/var/www/work/" // path to mathtex work files
+    mathtex.MathtexMsgLevel = "0" // mathtex message level
+
     filename, err := mathtex.RenderImage(`x^2+y^2`)
     if err != nil {
         log.Fatalln("Mathtex error: " + err.Error())
