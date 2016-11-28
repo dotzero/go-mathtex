@@ -194,6 +194,12 @@ Information adjustable by -D switches on compile line
   #define ISDVIPNGSWITCH 0		/* no -DDVIPNG switch */
   #define DVIPNG "/usr/share/texmf/bin/dvipng"/* default path to dvipng */
 #endif
+#if defined(DVISVGM)
+  #define ISDVISVGMSWITCH 1     /* have -DDVISVGM=\"path/dvisvgm\" */
+#else
+  #define ISDVISVGMSWITCH 0     /* no -DDVISVGM switch */
+  #define DVISVGM "/usr/share/texmf/bin/dvisvgm"/* default path to dvisvgm */
+#endif
 #if defined(DVIPS)
   #define ISDVIPSSWITCH 1		/* have -DDVIPS=\"path/dvips\" */
 #else
@@ -231,18 +237,19 @@ Information adjustable by -D switches on compile line
 static	char latexpath[256] = LATEX,    pdflatexpath[256] = PDFLATEX,
 	dvipngpath[256] = DVIPNG,       dvipspath[256] = DVIPS,
 	ps2epsipath[256] = PS2EPSI,     convertpath[256] = CONVERT,
-	timelimitpath[256] = TIMELIMIT;
+	timelimitpath[256] = TIMELIMIT, dvisvgmpath[256] = DVISVGM;
 /* --- source of path info: 0=default, 1=switch, 2=which, 3=locate --- */
 static	int  islatexpath=ISLATEXSWITCH, ispdflatexpath=ISPDFLATEXSWITCH,
 	isdvipngpath=ISDVIPNGSWITCH,    isdvipspath=ISDVIPSSWITCH,
 	isps2epsipath=ISPS2EPSISWITCH,  isconvertpath=ISCONVERTSWITCH,
-	istimelimitpath=ISTIMELIMITSWITCH;
+	istimelimitpath=ISTIMELIMITSWITCH, isdvisvgmpath=ISDVISVGMSWITCH;
 /* ---
  * home path pwd of running executable image,
  * and http_referer,etc information
  * ------------------------------------------- */
 static	char homepath[256] = "\000";	/* path to executable image */
-static	char this_referer[256];
+static	char this_referer[256];		/* getenv("HTTP_REFERER") */
+static	char this_remoteip[256];	/* getenv("REMOTE_ADDR") */
 /* ---
  * cache path -DCACHE=\"path/\" specifies directory
  * ------------------------------------------------ */
@@ -281,6 +288,8 @@ static	int  ispicture = 0;		/* true for picture environment */
   #define IMAGEMETHOD 1
 #elif  defined(DVIPSMETHOD)  || (ISDVIPSSWITCH==1 && ISDVIPNGSWITCH==0)
   #define IMAGEMETHOD 2
+#elif  defined(DVISVGMMETHOD) || ISDVISVGMSWITCH==1
+  #define IMAGEMETHOD 3
 #elif !defined(IMAGEMETHOD)
   #define IMAGEMETHOD 1
 #endif
@@ -294,12 +303,15 @@ static	int  imagemethod = IMAGEMETHOD;	/* 1=dvipng, 2=dvips/convert */
 #if defined(PNG)
   #define IMAGETYPE 2
 #endif
+#if defined(SVG)
+  #define IMAGETYPE 3
+#endif
 #if !defined(IMAGETYPE)
   #define IMAGETYPE 1
 #endif
-static	int  imagetype = IMAGETYPE;	/* 1=gif, 2=png */
+static	int  imagetype = IMAGETYPE;	/* 1=gif, 2=png, 3=svg */
 static	char *extensions[] = { NULL,	/* image type file .extensions */
-  "gif", "png", NULL };
+  "gif", "png", "svg", NULL };
 /* ---
  * \[ \displaystyle \]  or  $ \textstyle $  or  \parstyle
  * ------------------------------------------------------ */
@@ -460,15 +472,23 @@ static	char *whitepackages[] = {	/* \usepackage{} whitelist */
 /* ---
  * comma-separated list of HTTP_REFERER's allowed/denied to use mathTeX
  * -------------------------------------------------------------------- */
-#if !defined(REFERER)
+#if !defined(REFERER)			/*only these referers can use mathtex*/
   #define REFERER "\000"
 #endif
-#if !defined(DENYREFERER)
+#if !defined(DENYREFERER)		/* all but these referers can use it */
   #define DENYREFERER "\000"
 #endif
 #if !defined(MAXINVALID)		/* longest length expression */
   #define MAXINVALID 0			/* from an invalid referer */
 #endif					/* that will be rendered w/o error */
+/* ---
+ * password to bypass preceding REFERER checks
+ * ---------------------------------------------- */
+#if !defined(PASSWORD)
+  #define PASSWORD "\000"		/* \password{PASSWORD} in expression */
+#endif
+static	char password[128] = "\000";	/* user's \password{password} */
+static	int  ispassword = 0;		/* true if password==PASSWORD */
 /* ---
  * time zone delta t (in hours)
  * ---------------------------- */
@@ -584,9 +604,10 @@ static	char tempdir[256] = "\000";	/* temporary work directory */
  * ------------------------------------------------------------------- */
 static	char latexdefaultwrapper[MAXEXPRSZ+16384] =
 	"%%% url: %%referer%%\n"	/* http_referer submitting request */
+	"%%%  ip: %%remote_addr%%\n"	/* ip remote_addr submitting request */
 	"\\documentclass[10pt]{article}\n" /*[fleqn] omitted*/
 	"\\usepackage[utf8]{inputenc}\n"
-  "\\usepackage[russian]{babel}\n"
+	"\\usepackage[russian]{babel}\n"
 	"\\usepackage{amsmath}\n"
 	"\\usepackage{amsfonts}\n"
 	"\\usepackage{amssymb}\n"
@@ -630,9 +651,10 @@ static	char latexdefaultwrapper[MAXEXPRSZ+16384] =
  * ------------------------------------------------------------------- */
 static	char latexdepthwrapper[MAXEXPRSZ+16384] =
 	"%%% url: %%referer%%\n"	/* http_referer submitting request */
+	"%%%  ip: %%remote_addr%%\n"	/* ip remote_addr submitting request */
 	"\\documentclass[10pt]{article}\n" /*[fleqn] omitted*/
   "\\usepackage[utf8]{inputenc}\n"
-  "\\usepackage[russian]{babel}\n"
+	"\\usepackage[russian]{babel}\n"
 	"\\usepackage{amsmath}\n"
 	"\\usepackage{amsfonts}\n"
 	"\\usepackage{amssymb}\n"
@@ -892,6 +914,7 @@ char	*host_showad = HOST_SHOWAD;	/* show ads only on this host */
 char	*nomath();			/* remove math chars from string */
 /* --- referer initialization variables --- */
 char	*http_referer = getenv("HTTP_REFERER"), /* referer using mathTeX */
+	*remote_addr  = getenv("REMOTE_ADDR"),  /* ip using mathTeX */
 	*mathtex_host = getenv("HTTP_HOST"),	/* http host for mathTeX */
 	*server_name  = getenv("SERVER_NAME"),	/* server hosting mathTeX */
 	*http_host = (!isempty(mathtex_host)?mathtex_host: /*match host*/
@@ -988,14 +1011,17 @@ Initialization
 /* --- set global variables --- */
 msgfp = NULL;				/* for query mode output */
 msgnumber = 0;				/* no errors to report yet */
-if ( imagetype < 1 || imagetype > 2 ) imagetype = 1;   /* keep in bounds */
-if ( imagemethod<1 || imagemethod>2 ) imagemethod = 1; /* keep in bounds */
+if ( imagetype < 1 || imagetype > 3 ) imagetype = 1;   /* keep in bounds */
+if ( imagemethod<1 || imagemethod>3 ) imagemethod = 1; /* keep in bounds */
 if ( (pwdpath = presentwd(0))		/* pwd where exectuable resides */
 !=   NULL )				/* got it */
   strcpy(homepath,pwdpath);		/* save it for mathtex() later */
 strninit(this_referer,((!isempty(http_referer))?http_referer:">>none<<"),255);
-strreplace(this_referer,"\n"," ",0,0);	/* get rid of newlines */
-strreplace(this_referer,"\r"," ",0,0);	/* ditto cr's, just in case */
+strninit(this_remoteip,((!isempty(remote_addr))?remote_addr :">>none<<"),255);
+strreplace(this_referer, "\n"," ",0,0);	/* get rid of newlines */
+strreplace(this_remoteip,"\n"," ",0,0);	/* get rid of newlines */
+strreplace(this_referer, "\r"," ",0,0);	/* ditto cr's, just in case */
+strreplace(this_remoteip,"\r"," ",0,0);	/* ditto cr's, just in case */
 /* ---
  * check QUERY_STRING query for expression
  * --------------------------------------- */
@@ -1074,23 +1100,36 @@ unescape_url(expression);		/* convert %20 to blank space, etc */
 mathprep(expression);			/* convert &lt; to <, etc */
 validate(expression);			/* remove \input, etc */
 /* ---
+ * check expression for \password{...}
+ * -------------------------------------- */
+if ( !isempty(PASSWORD) )		/* compiled -DPASSWORD=\"password\" */
+  if ( getdirective(expression,"\\password",1,0,1,password)
+  != NULL )				/* found \password{} in expression */
+    ispassword = (strcmp(PASSWORD,password)==0?1:0); /* password==PASSWORD? */
+/* ---
  * check if this http_referer is allowed to use mathTeX
  * ---------------------------------------------------- */
 msgnumber = 0;				/* default invalid message number */
-/* --- see if user fails to match -DREFERER list of valid domains --- */
-if ( isquery )				/* not relevant if in command mode */
-  if ( !isempty(REFERER) )		/* nor if compiled w/o -DREFERER= */
-    if ( !isstrstr(http_referer,REFERER,0) ) /* invalid http_referer */
-      isvalidreferer = 0;		/* signal invalid referer */
-/* --- see if user matches -DDENYREFERER list of invalid domains --- */
-if ( isquery )				/* not relevant if in command mode */
+if ( isquery				/* not relevant in command mode */
+&&   !ispassword ) {			/* nor if user supplied \password{} */
+  /* --- if no http_referer given, see whether that user allowed --- */
+  if ( isempty(http_referer) ) {	/* http_referer not supplied */
+    if ( !isempty(DENYREFERER) )	/* and have a -DDENYREFERER list */
+      if ( isstrstr("noNONE",DENYREFERER,1) ) /*"noNONE" in DENYREFERER list*/
+        isvalidreferer = 0;		/* so invalid without http_referer */
+    } /* --- end-of-if(isempty(http_referer)) --- */
+  /* --- see if user fails to match -DREFERER list of valid domains --- */
+  if ( isvalidreferer )			/* or if alteady invalid */
+    if ( !isempty(REFERER) )		/* nor if compiled w/o -DREFERER= */
+      if ( !isstrstr(http_referer,REFERER,0) ) /* invalid http_referer */
+        isvalidreferer = 0;		/* signal invalid referer */
+  /* --- see if user matches -DDENYREFERER list of invalid domains --- */
   if ( isvalidreferer )			/* or if alteady invalid */
     if ( !isempty(DENYREFERER) )	/*nor if compiled w/o -DDENYREFERER*/
       if ( isstrstr(http_referer,DENYREFERER,0) ) /* invalid http_referer */
         isvalidreferer = 0;		/* signal invalid referer */
-/* --- see if user matches -DHTACCESS list of invalid domains --- */
-if ( isquery )				/* not relevant if in command mode */
-  if ( isvalidreferer ) {		/* or if alteady invalid */
+  /* --- see if user matches -DHTACCESS list of invalid domains --- */
+  if ( isvalidreferer ) {		/* or if already invalid */
     int	iaccess=0;			/* htaccess[] index */
     msgnumber = (-999);			/* 0 or positive if match found */
     for ( iaccess=0; msgnumber<0; iaccess++ ) { /*run thru htaccess[] table*/
@@ -1106,6 +1145,7 @@ if ( isquery )				/* not relevant if in command mode */
       } /* --- end-of-for(iaccess) --- */
     if ( msgnumber >= 0 )		/* deny access to this referer */
       isvalidreferer = 0; }		/* signal invalid referer */
+  } /* --- end-of-if(isquery&&!ispassword) --- */
 /* --- render short expressions even for invalid referers --- */
 if ( !isvalidreferer )			/* have an invalid referer */
   if ( MAXINVALID > 0 )			/* but short expressions allowed */
@@ -1601,6 +1641,8 @@ char  dvipngargs[1024] =		/* args/switches for dvipng */
 	" --%%imagetype%% -D %%dpi%% --gamma %%gamma%%"
 	" -bg Transparent -T tight -v"	/* -q for quiet, -v for verbose */
 	" -o %%giffile%% ";		/* output filename supplied as -o */
+char  dvisvgmargs[1024] =		/* args/switches for dvisvgm */
+  " %%dvifile%% -o %%svgfile%% -n --exact -v0 --relative --zoom=1.2546875";
 /* --- other variables --- */
 static	int iserror = 0;		/* true if procesing error message */
 int	setpaths();			/* set paths for latex,dvipng,etc */
@@ -1660,8 +1702,9 @@ if ( !iserror )				/* don't \usepackage for error */
 /* -------------------------------------------------------------------------
 Replace "keywords" in latex template with expression and other directives
 -------------------------------------------------------------------------- */
-/* --- embed http_referer submitting request --- */
+/* --- embed http_referer,remote_addr submitting request --- */
 strreplace(latexwrapper,"%%referer%%",this_referer,1,0);
+strreplace(latexwrapper,"%%remote_addr%%",this_remoteip,1,0);
 /* --- usually replace %%pagestyle%% with \pagestyle{empty} --- */
   if ( !ispicture			/* not \begin{picture} environment */
   ||   latexmethod == 1 )		/* or using latex/dvips/ps2epsi */
@@ -1938,6 +1981,34 @@ if ( imagemethod == 2 ) {		/* dvips/convert method requested */
       CONVERTFAILED));			/* convert ran but failed */
     goto end_of_job; }			/* and quit */
   } /* --- end-of-if(imagemethod==2) --- */
+/* -------------------------------------------------------------------------
+Run dvisvgm for .dvi-to-svg
+-------------------------------------------------------------------------- */
+if ( imagemethod == 3 ) {		/*dvisvgm method requested*/
+  /* ---
+   * First replace "keywords" in dvisvgmargs template with actual values
+   *------------------------------------------------------------------- */
+  strreplace(dvisvgmargs,"%%dvifile%%",makepath("","latex",".dvi"),1,0);
+  strreplace(dvisvgmargs,"%%svgfile%%",giffile,1,0);
+  /* ---
+   * And run dvisvgm to convert .dvi file directly to .svg
+   *---------------------------------------------------------- */
+  strcpy(command,makepath("",dvisvgmpath,NULL)); /* running dvisvgm program */
+  if ( isempty(command) ) {		/* no program path to dvisvgm */
+    msgnumber = SYPNGFAILED;		/* set corresponding error message */
+    goto end_of_job; }			/* signal failure and emit error */
+  strcat(command,dvisvgmargs);		/* add dvisvgm switches */
+  strcat(command," >dvisvgm.out 2>dvisvgm.err"); /* redirect stdout, stderr */
+  showmsg(5,"dvisvgm command executed",command); /* dvisvgm command executed */
+  sys_stat = system(command);		/* execute the dvisvgm command */
+  if ( sys_stat == (-1)			/* system(dvisvgm) failed */
+  ||   !isfexists(giffile) ) {		/*or dvisvgm failed to create giffile*/
+    msgnumber =				/* set corresponding message number*/
+      (sys_stat==(-1)?SYPNGFAILED:	/* system() failed */
+      (isnotfound("dvisvgm")?SYPNGFAILED: /* dvisvgm program not found */
+      DVIPNGFAILED));			/* dvisvgm ran but failed */
+    goto end_of_job; }			/* and quit */
+  } /* --- end-of-if(imagemethod==3) --- */
 status = imagetype;			/* signal success */
 /* -------------------------------------------------------------------------
 Back to caller
@@ -2266,8 +2337,22 @@ for ( ivalid=0; !isempty(invalid[ivalid].command); ivalid++ ) { /*run list*/
 	argfmt[9]={0,0,0,0,0,0,0,0,0};	/* argformat digits */
   /* --- args returned as (char *) if nargs=1 or (char **) if nargs>1 --- */
   void	*argptr = (nargs<2?(void *)args[0]:(void *)pargs); /*(char * or **)*/
-  /* --- find and remove/replace all invalid command occurrences --- */
+  /* --- determine desired action for invalid[ivalid] validity check --- */
   if ( action < 1 ) continue;		/* ignore this invalid \command */
+  /* --- simple invalid string --- */
+  if ( action == 2 ) {			/* action = invalid string check */
+    char *cmdptr = strcasestr(expression,command); /* command in expression? */
+    if ( cmdptr != NULL ) {		/* found invalid string */
+      ninvalid++;			/* bump invalid count */
+      if ( !isempty(displaystring) )	/* explicit error message provided */
+        strcpy(expression,displaystring); /* replace user expression with msg */
+      else				/* format our own message */
+        sprintf(expression,"\\mbox{%s invalid or not allowed}",command);
+      break;				/* back to caller after first invalid */
+      } /* --- end-of-if(cmdptr!=NULL) --- */
+    continue;				/* okay, proceed with next check */
+    } /* --- end-of-if(action==2) --- */
+  /* --- find and remove/replace all invalid command occurrences --- */
   optionalpos = myoptionalpos;		/* set global arg for getdirective */
   argformat = myargformat;		/* set global arg for getdirective */
   /* --- interpret argformat digits --- */
@@ -2410,31 +2495,39 @@ Allocations and Declarations
 FILE	*filefp = NULL;			/* fopen(filename) for logfile */
 char	*timestamp();			/* time stamp for logged messages */
 char	*makepath();			/* construct full path/filename.ext*/
-char	*http_referer = getenv("HTTP_REFERER"); /* referer using mathTeX */
+char	*http_referer = getenv("HTTP_REFERER"), /* referer using mathTeX */
+	*remote_addr  = getenv("REMOTE_ADDR");  /* remote ip using mathTeX */
 char	*dashes =			/* separates logfile entries */
  "--------------------------------------------------------------------------";
+int	loglen = strlen(dashes);	/* #chars on line in log file*/
 /* -------------------------------------------------------------------------
 write message to cache log file
 -------------------------------------------------------------------------- */
 if ( !isempty(CACHELOG) ) {		/* if a logfile is given */
   if ( (filefp=fopen(makepath(NULL,CACHELOG,NULL),"a")) /*open logfile*/
   !=   NULL ) {				/* ignore logging if can't open */
-    int isreflogged = 0;		/* set true if http_referer logged */
     fprintf(filefp,"%s                 %s\n", /* timestamp, md5 file */
     timestamp(TZDELTA,0),		/* timestamp */
     makepath("",filename,extensions[imagetype])); /* hashed filename */
     fprintf(filefp,"%s\n",expression);	/* expression in filename */
     if ( !isempty(http_referer) ) {	/* show referer if we have one */
-      int loglen = strlen(dashes);	/* #chars on line in log file*/
       char *refp = http_referer;	/* line to be printed */
-      isreflogged = 1;			/* signal http_referer logged*/
       while ( 1 ) {			/* printed in parts if needed*/
 	fprintf(filefp,"%.*s\n",loglen,refp); /* print a part */
 	if ( strlen(refp) <= loglen ) break;  /* no more parts */
 	refp += loglen; }		/* bump ptr to next part */
       } /* --- end-of-if(!isempty(http_referer)) --- */
-    if ( !isreflogged )			/* http_referer not logged */
+    else				/* http_referer not logged */
       fprintf(filefp,"http://>>none<<\n"); /* so log dummy referer line */
+    if ( !isempty(remote_addr) ) {	/* show remote ip addr if we have one*/
+      char *remp = remote_addr;		/* line to be printed */
+      while ( 1 ) {			/* printed in parts if needed*/
+	fprintf(filefp,"%.*s\n",loglen,remp); /* print a part */
+	if ( strlen(remp) <= loglen ) break;  /* no more parts */
+	remp += loglen; }		/* bump ptr to next part */
+      } /* --- end-of-if(!isempty(remote_addr)) --- */
+    else				/* remote_addr not logged */
+      fprintf(filefp,"xxx.xxx.xxx.xxx"); /* so log dummy remote_addr line */
     fprintf(filefp,"%s\n",dashes);	/* separator line */
     fclose(filefp);			/* close logfile immediately */
     } /* --- end-of-if(filefp!=NULL) --- */
