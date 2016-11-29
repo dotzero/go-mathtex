@@ -55,6 +55,7 @@ func main() {
     mathtex.MathtexCachePath = "/var/www/cache/" // path to mathtex cache files
     mathtex.MathtexWorkPath = "/var/www/work/" // path to mathtex work files
     mathtex.MathtexMsgLevel = "0" // mathtex message level
+    mathtex.MathtexOutputExt = "png" // mathtex output file extenstion
 
     filename, err := mathtex.RenderImage(`x^2+y^2`)
     if err != nil {

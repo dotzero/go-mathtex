@@ -18,6 +18,8 @@ var (
 	MathtexWorkPath = "/var/www/work/"
 	// MathtexMsgLevel contains mathtex message level 0-99
 	MathtexMsgLevel = "0"
+	// MathtexOutputExt contains mathtex output file extenstion
+	MathtexOutputExt = "png"
 )
 
 // FileOut struct contains data of rendered file
@@ -29,7 +31,7 @@ type FileOut struct {
 
 // FileOut.fullname() returns full path
 func (f *FileOut) fullname() string {
-	return f.Base + f.Name + f.Ext
+	return f.Base + f.Name + "." + f.Ext
 }
 
 // FileOut.outpath() returns full path without .ext
@@ -37,7 +39,7 @@ func (f *FileOut) outpath() string {
 	return f.Base + f.Name
 }
 
-// RenderImage render LaTeX expression to PNG
+// RenderImage render LaTeX expression to PNG or SVG
 func RenderImage(expr string) (string, error) {
 	var (
 		cmdArgs []string
@@ -54,7 +56,7 @@ func RenderImage(expr string) (string, error) {
 	fileOut := FileOut{
 		Base: MathtexCachePath,
 		Name: md5hash(expr),
-		Ext:  ".png",
+		Ext:  MathtexOutputExt,
 	}
 
 	expr = AnalyzeLatex(expr)
@@ -81,7 +83,7 @@ func CheckRenderCache(expr string) (string, error) {
 	fileOut := FileOut{
 		Base: MathtexCachePath,
 		Name: md5hash(expr),
-		Ext:  ".png",
+		Ext:  MathtexOutputExt,
 	}
 
 	if flag, err := exists(fileOut.fullname()); flag == true && err == nil {
