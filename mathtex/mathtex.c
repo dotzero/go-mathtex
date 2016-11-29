@@ -1300,7 +1300,11 @@ if ( strstr(expression,"picture") != NULL ) /* picture environment used */
   ispicture = 1;			/* signal picture environment */
 if ( strreplace(expression,"\\nopicture","",0,0) /* remove \nopicture */
 >=   1 ) ispicture = 0;			/* user wants to handle picture */
-if ( ispicture ) {			/* set picture environment defaults*/
+if ( ispicture && imagemethod==3 ) {
+  mathmode = 2;				/* must be in paragraph mode */
+  isdepth = 0;				/* reset default in case it's true */
+  } /* --- end-of-if(ispicture) --- */
+else if ( ispicture ) {			/* set picture environment defaults*/
   imagemethod = 2;			/* must use convert, not dvipng */
   mathmode = 2;				/* must be in paragraph mode */
   isdepth = 0;				/* reset default in case it's true */
