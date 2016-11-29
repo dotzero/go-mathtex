@@ -41,4 +41,6 @@ _testmain.go
 # external packages folder
 vendor/
 
+.vagrant/
+Vagrantfile
 .realsync
