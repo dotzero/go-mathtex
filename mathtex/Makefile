@@ -12,7 +12,14 @@ PATH_WORK ?= $(PREFIX)/work/
 
 # Compile flags
 CC ?= cc
-CFLAGS = -DLATEX=\"`which latex`\" \
+CFLAGS_PNG = -DLATEX=\"`which latex`\" \
+	-DDVIPNG=\"`which dvipng`\" \
+	-DCACHE=\"$(PATH_CACHE)\" \
+	-DWORK=\"$(PATH_WORK)\" \
+	-DWHITEPACKAGES=\"whitepackages\" \
+	-DDPI=\"120\" \
+	-DPNG
+CFLAGS_SVG = -DLATEX=\"`which latex`\" \
 	-DDVISVGM=\"`which dvisvgm`\" \
 	-DCACHE=\"$(PATH_CACHE)\" \
 	-DWORK=\"$(PATH_WORK)\" \
@@ -21,9 +28,15 @@ CFLAGS = -DLATEX=\"`which latex`\" \
 
 all: clean build test
 
-build:
+build: png
+
+png:
 	mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
-	$(CC) $(CC_SRC_PATH) $(CFLAGS) -o $(CC_BIN_PATH)
+	$(CC) $(CC_SRC_PATH) $(CFLAGS_PNG) -o $(CC_BIN_PATH)
+
+svg:
+	mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
+	$(CC) $(CC_SRC_PATH) $(CFLAGS_SVG) -o $(CC_BIN_PATH)
 
 test:
 	$(CC_BIN_PATH) -o "$(PATH_CACHE)formula" -m 99 "x^2+y^2"
@@ -35,4 +48,4 @@ clean:
 	rm -rf $(PATH_CACHE)
 	rm -rf $(PATH_WORK)
 
-.PHONY: build test clean
+.PHONY: build png svg test clean

@@ -25,6 +25,14 @@ make build
 This commands will compile mathtex to `/var/www/mathtex.cgi` and also create two dirs `/var/www/cache` and `/var/www/work`.
 You can change this behavior with `make build PREFIX="/path/to/"`.
 
+If you prefer to render SVG instead of PNG, then follow the instructions below.
+
+```bash
+git clone https://github.com/dotzero/go-mathtex
+cd go-mathtex/mathtex
+make svg
+```
+
 ## Install
 
 ```bash
