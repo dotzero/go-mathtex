@@ -2,13 +2,13 @@
 PWD := $(shell pwd)
 PREFIX ?= $(PWD)/build
 
-# Build mathtex.c
-CC_SRC_PATH ?= $(PWD)/mathtex.c
-CC_BIN_PATH ?= $(PREFIX)/mathtex.cgi
-
 # Relative paths to mathTeX's cache and work dirs
 PATH_CACHE ?= $(PREFIX)/cache/
 PATH_WORK ?= $(PREFIX)/work/
+
+# Build mathtex.c
+SRC_PATH ?= $(PWD)/mathtex.c
+BIN_PATH ?= $(PREFIX)/mathtex.cgi
 
 # Compile flags
 CC ?= cc
@@ -26,26 +26,37 @@ CFLAGS_SVG = -DLATEX=\"`which latex`\" \
 	-DWHITEPACKAGES=\"whitepackages\" \
 	-DSVG
 
-all: clean build test
+all: clean _build_png test
 
-build: png
+png: _build_png _done
 
-png:
-	mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
-	$(CC) $(CC_SRC_PATH) $(CFLAGS_PNG) -o $(CC_BIN_PATH)
-
-svg:
-	mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
-	$(CC) $(CC_SRC_PATH) $(CFLAGS_SVG) -o $(CC_BIN_PATH)
+svg: _build_svg _done
 
 test:
-	$(CC_BIN_PATH) -o "$(PATH_CACHE)formula" -m 99 "x^2+y^2"
-	$(CC_BIN_PATH) -o "$(PATH_CACHE)switches" -m 99 "\switches"
-	$(CC_BIN_PATH) -o "$(PATH_CACHE)environment" -m 99 "\environment"
+	$(BIN_PATH) -o "$(PATH_CACHE)formula" -m 99 "x^2+y^2"
+	$(BIN_PATH) -o "$(PATH_CACHE)switches" -m 99 "\switches"
+	$(BIN_PATH) -o "$(PATH_CACHE)environment" -m 99 "\environment"
 
 clean:
-	rm -f $(CC_BIN_PATH)
+	rm -f $(BIN_PATH)
 	rm -rf $(PATH_CACHE)
 	rm -rf $(PATH_WORK)
 
-.PHONY: build png svg test clean
+_build_png:
+	@mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
+	$(CC) $(SRC_PATH) $(CFLAGS_PNG) -o $(BIN_PATH)
+
+_build_svg:
+	@mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
+	$(CC) $(SRC_PATH) $(CFLAGS_SVG) -o $(BIN_PATH)
+
+_done:
+	@echo "------------------------------------------------"
+	@echo " Mathtex - Build Successful"
+	@echo "------------------------------------------------"
+	@echo " Binary: $(BIN_PATH)"
+	@echo " Cache path: $(PATH_CACHE)"
+	@echo " Working path: $(PATH_WORK)"
+	@echo "------------------------------------------------"
+
+.PHONY: all png svg test clean

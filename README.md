@@ -19,18 +19,21 @@ Then compile `mathtex` to binary, follow the instructions below.
 ```bash
 git clone https://github.com/dotzero/go-mathtex
 cd go-mathtex/mathtex
-make build
+make png \
+    BIN_PATH=/usr/local/bin/mathtex \
+    PATH_CACHE=/var/lib/mathtex/cache \
+    PATH_WORK=/var/lib/mathtex/work
 ```
 
-This commands will compile mathtex to `/var/www/mathtex.cgi` and also create two dirs `/var/www/cache` and `/var/www/work`.
-You can change this behavior with `make build PREFIX="/path/to/"`.
-
-If you prefer to render SVG instead of PNG, then follow the instructions below.
+This commands will compile mathtex to `/usr/local/bin/mathtex` and also create two dirs `/var/lib/mathtex/cache` and `/var/lib/mathtex/work`. If you prefer to render SVG instead of PNG, then follow the instructions below.
 
 ```bash
 git clone https://github.com/dotzero/go-mathtex
 cd go-mathtex/mathtex
-make svg
+make svg \
+    BIN_PATH=/usr/local/bin/mathtex \
+    PATH_CACHE=/var/lib/mathtex/cache \
+    PATH_WORK=/var/lib/mathtex/work
 ```
 
 ## Install
