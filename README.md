@@ -57,11 +57,21 @@ func main() {
     mathtex.MathtexMsgLevel = "0" // mathtex message level
     mathtex.MathtexOutputExt = "png" // mathtex output file extenstion
 
-    filename, err := mathtex.RenderImage(`x^2+y^2`)
+    expr := `x^2+y^2`
+
+    // Check for pre-rendered file
+    if filename, err := mathtex.CheckRenderCache(expr); err == nil {
+        log.Printf("Mathtex pre-rendered file: %s\n", filename)
+        return
+    }
+
+    // Pre-rendered file not found, try to render it
+    filename, err := mathtex.RenderImage(expr)
     if err != nil {
         log.Fatalln("Mathtex error: " + err.Error())
+        return
     }
-    log.Printf("Mathtex image: %s\n", filename)
+    log.Printf("Mathtex rendered file: %s\n", filename)
 }
 ```
 

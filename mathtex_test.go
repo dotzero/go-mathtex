@@ -6,7 +6,7 @@ import (
 )
 
 func TestFileOutStruct(t *testing.T) {
-	f1 := FileOut{Base: "/", Name: "foo", Ext: ".bar"}
+	f1 := FileOut{Base: "/", Name: "foo", Ext: "bar"}
 	if f1.fullname() != "/foo.bar" {
 		t.Fatalf("TestFileOutStruct: `%s` == `/foo.bar` - failed", f1.fullname())
 	}
@@ -15,7 +15,7 @@ func TestFileOutStruct(t *testing.T) {
 	}
 
 	f2 := FileOut{Name: "foobar"}
-	if f2.fullname() != "foobar" {
+	if f2.fullname() != "foobar." {
 		t.Fatalf("TestFileOutStruct: `%s` == `foobar` - failed", f2.fullname())
 	}
 	if f2.outpath() != "foobar" {
