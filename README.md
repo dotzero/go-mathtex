@@ -21,8 +21,8 @@ git clone https://github.com/dotzero/go-mathtex
 cd go-mathtex/mathtex
 make png \
     BIN_PATH=/usr/local/bin/mathtex \
-    PATH_CACHE=/var/lib/mathtex/cache \
-    PATH_WORK=/var/lib/mathtex/work
+    PATH_CACHE=/var/lib/mathtex/cache/ \
+    PATH_WORK=/var/lib/mathtex/work/
 ```
 
 This commands will compile mathtex to `/usr/local/bin/mathtex` and also create two dirs `/var/lib/mathtex/cache` and `/var/lib/mathtex/work`. If you prefer to render SVG instead of PNG, then follow the instructions below.
@@ -32,8 +32,8 @@ git clone https://github.com/dotzero/go-mathtex
 cd go-mathtex/mathtex
 make svg \
     BIN_PATH=/usr/local/bin/mathtex \
-    PATH_CACHE=/var/lib/mathtex/cache \
-    PATH_WORK=/var/lib/mathtex/work
+    PATH_CACHE=/var/lib/mathtex/cache/ \
+    PATH_WORK=/var/lib/mathtex/work/
 ```
 
 ## Install

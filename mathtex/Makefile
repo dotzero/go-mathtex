@@ -43,11 +43,11 @@ clean:
 	rm -rf $(PATH_WORK)
 
 _build_png:
-	@mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
+	@mkdir -p $(PATH_CACHE) $(PATH_WORK)
 	$(CC) $(SRC_PATH) $(CFLAGS_PNG) -o $(BIN_PATH)
 
 _build_svg:
-	@mkdir -p $(PREFIX) $(PATH_CACHE) $(PATH_WORK)
+	@mkdir -p $(PATH_CACHE) $(PATH_WORK)
 	$(CC) $(SRC_PATH) $(CFLAGS_SVG) -o $(BIN_PATH)
 
 _done:

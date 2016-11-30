@@ -57,6 +57,15 @@ func main() {
 	portFlag := flag.Int("p", 8888, "Port")
 	flag.Parse()
 
+	mathtex.MathtexPath = "/usr/local/bin/mathtex"
+	mathtex.MathtexCachePath = "/var/lib/mathtex/cache/"
+	mathtex.MathtexWorkPath = "/var/lib/mathtex/work/"
+	mathtex.MathtexMsgLevel = "99"
+	mathtex.MathtexOutputExt = "png"
+
+	fmt.Println("Listening on http://localhost:" + strconv.Itoa(*portFlag))
+	fmt.Println("Press Ctrl-C to quit.")
+
 	http.HandleFunc("/", handler)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(*portFlag), nil))
 }
