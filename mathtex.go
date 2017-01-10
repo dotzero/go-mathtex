@@ -152,8 +152,15 @@ func AnalyzeLatex(expr string) string {
 		expr = `\setlength{\unitlength}{1pt}` + eol + expr
 	}
 
-	if strings.Contains(expr, `\begin{align`) == true {
-		expr = `\parmode` + eol + expr
+	parmodelist := []string{
+		`\begin{align`,
+		`\begin{multline`,
+	}
+
+	for _, word := range parmodelist {
+		if strings.Contains(expr, word) == true {
+			expr = `\parmode` + eol + expr
+		}
 	}
 
 	return expr
